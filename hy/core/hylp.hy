@@ -56,7 +56,7 @@ These are read out of the hy/compiler.py file."
   "Return Usage, docstring filename, lineno for the string SYM."
   `(cond
     [(in ~sym (hy-language-keywords))
-     (,  (.format "Usage: ({0} {1})"
+     (,  (.format "({0} {1})"
                   ~sym
                   (get-args
                    (get-code
@@ -67,7 +67,7 @@ These are read out of the hy/compiler.py file."
          (. hy core language ~(HySymbol sym) __code__ co_firstlineno))]
 
     [(in ~sym (hy-shadow-keywords))
-     (,  (.format "Usage: ({0} {1})"
+     (,  (.format "({0} {1})"
                   ~sym
                   (get-args
                    (get-code
@@ -78,7 +78,7 @@ These are read out of the hy/compiler.py file."
          (. hy core shadow ~(HySymbol sym) __code__ co_firstlineno))]
 
     [(in ~sym (hy-macro-keywords))
-     (, (.format "Usage: ({0} {1})"
+     (, (.format "({0} {1})"
                  ~sym
                  (get-args
                   (get-code
@@ -181,15 +181,6 @@ These are read out of the hy/compiler.py file."
       ;; cut off leading and trailing []
       (cut args 1 -1))))
 
-
-;; (defmacro ? [sym]
-;;   "Return help for SYM which is a string."
-;;   `(let [flds (hylp-info ~sym)]
-;;      (.format "Usage: ({0} {1})\n\n{2}\n\n[[{3}::{4}]]\n"
-;;               (get flds 0) ;;name
-;;               (get-args (get-code (get flds 1) (get flds 2)))
-;;               (get flds 3) ;; docstring
-;;               (get flds 1) (get flds 2))))
 
 (defmacro ? [sym]
   "Return help for SYM which is a string."
