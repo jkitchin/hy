@@ -56,15 +56,22 @@ These are read out of the hy/compiler.py file."
   "Return Usage, docstring filename, lineno for the string SYM."
   `(cond
     [(in ~sym (hy-language-keywords))
-     (,  (.format "({0} {1})"
-                  ~sym
-                  (get-args
-                   (get-code
-                    (. hy core language ~(HySymbol sym) __code__ co_filename)
-                    (. hy core language ~(HySymbol sym) __code__ co_firstlineno))))
+     (,  (.format
+          "({0} {1})"
+          ~sym
+          (if (hasattr (. hy core language ~(HySymbol sym)) "__code__")
+            (get-args
+             (get-code
+              (. hy core language ~(HySymbol sym) __code__ co_filename)
+              (. hy core language ~(HySymbol sym) __code__ co_firstlineno)))
+            "unknown args"))
          (. hy core language ~(HySymbol sym) __doc__)
-         (. hy core language ~(HySymbol sym) __code__ co_filename)
-         (. hy core language ~(HySymbol sym) __code__ co_firstlineno))]
+         (if (hasattr (. hy core language ~(HySymbol sym)) "__code__")
+           (. hy core language ~(HySymbol sym) __code__ co_filename)
+           "no code")
+         (if (hasattr (. hy core language ~(HySymbol sym)) "__code__")
+           (. hy core language ~(HySymbol sym) __code__ co_firstlineno)
+           -1))]
 
     [(in ~sym (hy-shadow-keywords))
      (,  (.format "({0} {1})"
@@ -90,13 +97,16 @@ These are read out of the hy/compiler.py file."
 
     [(in ~sym (.keys (hy-compiler-keywords)))
      (, (.format "{0} defined in hy/compiler" ~sym)
-        nil
+        "No docstring available."
         (get (get (hy-compiler-keywords) ~sym) 0)
         (get (get (hy-compiler-keywords) ~sym) 1))]
 
     [(= (. (type ~(HySymbol (.replace (string sym) "-" "_"))) __name__)
         "builtin_function_or_method")
-     (, ~sym (. ~(HySymbol sym) __doc__) nil nil)]
+     (, ~sym
+        (. ~(HySymbol sym) __doc__)
+        nil
+        nil)]
 
     ;; Not found. Maybe a regular symbol from hy? or a python func?
     [true
@@ -104,8 +114,7 @@ These are read out of the hy/compiler.py file."
        (, ~sym
           (. SYM __doc__)
           (. SYM func_code co_filename)
-          (. SYM func_code co_firstlineno)
-          ))]))
+          (. SYM func_code co_firstlineno)))]))
 
 
 (defn get-code [fname lineno]
