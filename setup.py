@@ -63,6 +63,7 @@ setup(
             'hy2py = hy.cmdline:hy2py_main',
         ]
     },
+    scripts=['bin/hydoc'],
     packages=find_packages(exclude=['tests*']),
     package_data={
         'hy.contrib': ['*.hy'],

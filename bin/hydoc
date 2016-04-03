@@ -1,0 +1,10 @@
+#! /usr/bin/env hy
+;; Get help string for name. Usage: hydoc NAME
+
+(defmain [&rest args]
+  (print
+   (eval
+    `(do
+      (import [hy.core.hylp [*]])
+      (require hy.core.hylp)
+      (? ~(string (get args 1)))))))
