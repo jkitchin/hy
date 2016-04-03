@@ -53,10 +53,9 @@ These are read out of the hy/compiler.py file."
     keywords))
 
 (defmacro hylp-info [sym]
-  "Return name, filename, lineno and doc string for the string SYM in hylang."
+  "Return Usage, docstring filename, lineno for the string SYM."
   `(cond
     [(in ~sym (hy-language-keywords))
-     ;; (print "language: ")
      (,  (.format "Usage: ({0} {1})"
                   ~sym
                   (get-args
@@ -68,7 +67,6 @@ These are read out of the hy/compiler.py file."
          (. hy core language ~(HySymbol sym) __code__ co_firstlineno))]
 
     [(in ~sym (hy-shadow-keywords))
-     ;; (print "shadow: ")
      (,  (.format "Usage: ({0} {1})"
                   ~sym
                   (get-args
@@ -80,7 +78,6 @@ These are read out of the hy/compiler.py file."
          (. hy core shadow ~(HySymbol sym) __code__ co_firstlineno))]
 
     [(in ~sym (hy-macro-keywords))
-     ;; (print "macro")
      (, (.format "Usage: ({0} {1})"
                  ~sym
                  (get-args
@@ -92,7 +89,6 @@ These are read out of the hy/compiler.py file."
         (. (get hy.macros._hy_macros nil ~sym) func_code co_firstlineno))]
 
     [(in ~sym (.keys (hy-compiler-keywords)))
-     ;; (print "compiler")
      (, (.format "{0} defined in hy/compiler" ~sym)
         nil
         (get (get (hy-compiler-keywords) ~sym) 0)
@@ -100,17 +96,16 @@ These are read out of the hy/compiler.py file."
 
     [(= (. (type ~(HySymbol (.replace (string sym) "-" "_"))) __name__)
         "builtin_function_or_method")
-     (print "builtin: ")
-     (, ~sym nil nil (. ~(HySymbol sym) __doc__))]
+     (, ~sym (. ~(HySymbol sym) __doc__) nil nil)]
 
     ;; Not found. Maybe a regular symbol from hy? or a python func?
     [true
-     ;; (print "catch: " (name  ~sym))
      (let [SYM ~(HySymbol (.replace (string sym) "-" "_"))]
        (, ~sym
+          (. SYM __doc__)
           (. SYM func_code co_filename)
           (. SYM func_code co_firstlineno)
-          (. SYM __doc__)))]))
+          ))]))
 
 
 (defn get-code [fname lineno]
