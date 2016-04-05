@@ -52,69 +52,172 @@ These are read out of the hy/compiler.py file."
                             (+ 1 i))))))))
     keywords))
 
-(defmacro hylp-info [sym]
+;; (defmacro hylp-info [sym]
+;;   "Return Usage, docstring filename, lineno for the string SYM."
+;;   `(cond
+;;     [(in ~sym (hy-language-keywords))
+;;      (,  (.format
+;;           "({0} {1})"
+;;           ~sym
+;;           (if (hasattr (. hy core language ~(HySymbol sym)) "__code__")
+;;             (get-args
+;;              (get-code
+;;               (. hy core language ~(HySymbol sym) __code__ co_filename)
+;;               (. hy core language ~(HySymbol sym) __code__ co_firstlineno)))
+;;             "unknown args"))
+;;          (. hy core language ~(HySymbol sym) __doc__)
+;;          (if (hasattr (. hy core language ~(HySymbol sym)) "__code__")
+;;            (. hy core language ~(HySymbol sym) __code__ co_filename)
+;;            "no code")
+;;          (if (hasattr (. hy core language ~(HySymbol sym)) "__code__")
+;;            (. hy core language ~(HySymbol sym) __code__ co_firstlineno)
+;;            -1))]
+
+;;     [(in ~sym (hy-shadow-keywords))
+;;      (,  (.format "({0} {1})"
+;;                   ~sym
+;;                   (get-args
+;;                    (get-code
+;;                     (. hy core shadow ~(HySymbol sym) __code__ co_filename)
+;;                     (. hy core shadow ~(HySymbol sym) __code__ co_firstlineno))))
+;;          (. hy core shadow ~(HySymbol sym) __doc__)
+;;          (. hy core shadow ~(HySymbol sym) __code__ co_filename)
+;;          (. hy core shadow ~(HySymbol sym) __code__ co_firstlineno))]
+
+;;     [(in ~sym (hy-macro-keywords))
+;;      (, (.format "({0} {1})"
+;;                  ~sym
+;;                  (get-args
+;;                   (get-code
+;;                    (. (get hy.macros._hy_macros nil ~sym) func_code co_filename)
+;;                    (. (get hy.macros._hy_macros nil ~sym) func_code co_firstlineno))))
+;;         (. (get hy.macros._hy_macros nil ~sym)  __doc__)
+;;         (. (get hy.macros._hy_macros nil ~sym) func_code co_filename)
+;;         (. (get hy.macros._hy_macros nil ~sym) func_code co_firstlineno))]
+
+;;     [(in ~sym (.keys (hy-compiler-keywords)))
+;;      (, (.format "{0} defined in hy/compiler" ~sym)
+;;         "No docstring available."
+;;         (get (get (hy-compiler-keywords) ~sym) 0)
+;;         (get (get (hy-compiler-keywords) ~sym) 1))]
+
+;;     [(= (. (type ~(HySymbol (.replace (string sym) "-" "_"))) __name__)
+;;         "builtin_function_or_method")
+;;      (, ~sym
+;;         (. ~(HySymbol sym) __doc__)
+;;         nil
+;;         nil)]
+
+;;     ;; Not found. Maybe a regular symbol from hy? or a python func?
+;;     [true
+;;      (let [SYM ~(HySymbol (.replace (string sym) "-" "_"))]
+;;        (, ~sym
+;;           (. SYM __doc__)
+;;           (. SYM func_code co_filename)
+;;           (. SYM func_code co_firstlineno)))]))
+
+
+(defn hylp-info-f [sym]
   "Return Usage, docstring filename, lineno for the string SYM."
-  `(cond
-    [(in ~sym (hy-language-keywords))
-     (,  (.format
-          "({0} {1})"
-          ~sym
-          (if (hasattr (. hy core language ~(HySymbol sym)) "__code__")
-            (get-args
-             (get-code
-              (. hy core language ~(HySymbol sym) __code__ co_filename)
-              (. hy core language ~(HySymbol sym) __code__ co_firstlineno)))
-            "unknown args"))
-         (. hy core language ~(HySymbol sym) __doc__)
-         (if (hasattr (. hy core language ~(HySymbol sym)) "__code__")
-           (. hy core language ~(HySymbol sym) __code__ co_filename)
-           "no code")
-         (if (hasattr (. hy core language ~(HySymbol sym)) "__code__")
-           (. hy core language ~(HySymbol sym) __code__ co_firstlineno)
-           -1))]
+  (import hy)
+  (cond
+   [(in sym (hy-language-keywords))
+    (,  (.format
+         "({0} {1})"
+         sym
+         (if (hasattr
+              (eval `(. hy core language ~(HySymbol sym))) "__code__")
+           (get-args
+            (get-code
+             (eval `(. hy core language ~(HySymbol sym) __code__ co_filename))
+             (eval `(. hy core language ~(HySymbol sym) __code__ co_firstlineno))))
+           "unknown args"))
+        (eval `(. hy core language ~(HySymbol sym) __doc__))
+        (if (hasattr (eval `(. hy core language ~(HySymbol sym))) "__code__")
+          (eval `(. hy core language ~(HySymbol sym) __code__ co_filename))
+          "no code")
+        (if (hasattr (eval `(. hy core language ~(HySymbol sym))) "__code__")
+          (eval `(. hy core language ~(HySymbol sym) __code__ co_firstlineno))
+          -1))]
 
-    [(in ~sym (hy-shadow-keywords))
-     (,  (.format "({0} {1})"
-                  ~sym
-                  (get-args
-                   (get-code
-                    (. hy core shadow ~(HySymbol sym) __code__ co_filename)
-                    (. hy core shadow ~(HySymbol sym) __code__ co_firstlineno))))
-         (. hy core shadow ~(HySymbol sym) __doc__)
-         (. hy core shadow ~(HySymbol sym) __code__ co_filename)
-         (. hy core shadow ~(HySymbol sym) __code__ co_firstlineno))]
-
-    [(in ~sym (hy-macro-keywords))
-     (, (.format "({0} {1})"
-                 ~sym
+   [(in sym (hy-shadow-keywords))
+    (,  (.format "({0} {1})"
+                 sym
                  (get-args
                   (get-code
-                   (. (get hy.macros._hy_macros nil ~sym) func_code co_filename)
-                   (. (get hy.macros._hy_macros nil ~sym) func_code co_firstlineno))))
-        (. (get hy.macros._hy_macros nil ~sym)  __doc__)
-        (. (get hy.macros._hy_macros nil ~sym) func_code co_filename)
-        (. (get hy.macros._hy_macros nil ~sym) func_code co_firstlineno))]
+                   (eval `(. hy core shadow ~(HySymbol sym) __code__ co_filename))
+                   (eval `(. hy core shadow ~(HySymbol sym) __code__ co_firstlineno)))))
+        (eval `(. hy core shadow ~(HySymbol sym) __doc__))
+        (eval `(. hy core shadow ~(HySymbol sym) __code__ co_filename))
+        (eval `(. hy core shadow ~(HySymbol sym) __code__ co_firstlineno)))]
 
-    [(in ~sym (.keys (hy-compiler-keywords)))
-     (, (.format "{0} defined in hy/compiler" ~sym)
-        "No docstring available."
-        (get (get (hy-compiler-keywords) ~sym) 0)
-        (get (get (hy-compiler-keywords) ~sym) 1))]
+   [(in sym (hy-macro-keywords))
+    (, (.format "({0} {1})"
+                sym
+                (get-args
+                 (get-code
+                  ;; (eval `(. (get hy.macros._hy_macros nil ~(string sym))
+                  ;; func_code co_filename)) ugg.. I want hy to avoid this kind
+                  ;; of stuff!!! I cannot figure out how to make this work
+                  ;; without a macro. Unfortunately macros are causing some
+                  ;; other issue with hyldoc when I use require. So I am trying
+                  ;; to get this function approach to work.
+                  (eval
+                   (read-str
+                    (string
+                     (.format
+                      "(. (get hy.macros._hy_macros nil \"{0}\") func_code co_filename)"
+                      sym))))
 
-    [(= (. (type ~(HySymbol (.replace (string sym) "-" "_"))) __name__)
-        "builtin_function_or_method")
-     (, ~sym
-        (. ~(HySymbol sym) __doc__)
-        nil
-        nil)]
+                  ;; (eval `(. (get hy.macros._hy_macros nil ~(string sym)) func_code co_firstlineno))
+                  (eval
+                   (read-str
+                    (string (.format
+                             "(. (get hy.macros._hy_macros nil \"{0}\") func_code co_firstlineno)"
+                             sym)))))))
 
-    ;; Not found. Maybe a regular symbol from hy? or a python func?
-    [true
-     (let [SYM ~(HySymbol (.replace (string sym) "-" "_"))]
-       (, ~sym
-          (. SYM __doc__)
-          (. SYM func_code co_filename)
-          (. SYM func_code co_firstlineno)))]))
+       (eval
+        (read-str (string
+                   (.format
+                    "(. (get hy.macros._hy_macros nil \"{0}\") __doc__)"
+                    sym))))
+       (eval
+        (read-str (string
+                   (.format
+                    "(. (get hy.macros._hy_macros nil \"{0}\") func_code co_filename)"
+                    sym))))
+
+       (eval (read-str (string (.format
+                                "(. (get hy.macros._hy_macros nil \"{0}\") func_code co_firstlineno)"
+                                sym)))))]
+
+   ;; Things like cut
+   [(in sym (.keys (hy-compiler-keywords)))
+    (, (.format "{0} defined in hy/compiler" sym)
+       "No docstring available."
+       (get (get (hy-compiler-keywords) sym) 0)
+       (get (get (hy-compiler-keywords) sym) 1))]
+
+   ;; Something that has a name attribute
+   [(= (. (type (HySymbol (.replace (string sym) "-" "_"))) __name__)
+       "builtin_function_or_method")
+    (, sym
+       (. (HySymbol sym) __doc__)
+       nil
+       nil)]
+
+   ;; Not found. Maybe a regular symbol from hy? or a python func?
+   [(let [SYM (HySymbol (.replace (string sym) "-" "_"))]
+      (and (hasattr SYM "__doc__")
+           (hasattr SYM "co_filename")
+           (hasattr SYM "co_firstlineno")))
+    (let [SYM (HySymbol (.replace (string sym) "-" "_"))]
+      (, sym
+         (. SYM __doc__)
+         (. SYM func_code co_filename)
+         (. SYM func_code co_firstlineno)))]
+
+   [true (, sym "Not Found" nil nil)]))
 
 
 (defn get-code [fname lineno]
@@ -191,27 +294,52 @@ These are read out of the hy/compiler.py file."
       (cut args 1 -1))))
 
 
-(defmacro ? [sym]
+;; I found the macro is necessary for this to work with hylp-indfo. I don't
+;; fully understand why.
+
+;; (defmacro ? [sym]
+;;   "Return help for SYM which is a string."
+;;   `(let [flds (hylp-info ~sym)]
+;;      (.format "Usage: {0}
+
+;; {1}
+
+;; [[{2}::{3}]]
+
+;; "
+;;               (get flds 0) ;; Usage
+;;               (get flds 1) ;; docstring
+;;               (get flds 2) ;; file
+;;               (get flds 3) ;; lineno
+;;               )))
+
+(defn ? [sym]
   "Return help for SYM which is a string."
-  `(let [flds (hylp-info ~sym)]
-     (.format "Usage: {0}
+  (let [flds (hylp-info-f sym)]
+    (.format "Usage: {0}
 
 {1}
 
 [[{2}::{3}]]
 
 "
-              (get flds 0) ;; Usage
-              (get flds 1) ;; docstring
-              (get flds 2) ;; file
-              (get flds 3) ;; lineno
-              )))
+             (get flds 0)  ;; Usage
+             (get flds 1)  ;; docstring
+             (get flds 2)  ;; file
+             (get flds 3)  ;; lineno
+             )))
 
 
-(defmacro hyldoc [sym]
+;; This function version works because of a lot of eval stuff in hylp-info-f
+(defn hyldoc [sym]
   "Return an eldoc style string for the string SYM."
-  `(string
-    (try
-     (get (hylp-info ~sym) 0)
-     (except [e Exception]
-       ""))))
+  (try
+   (get (hylp-info-f sym) 0)
+   (except [e Exception]
+     "")))
+
+
+(defn hyspy-file-lineno [sym]
+  "Return filename and line number where sym is defined as an org-mode link."
+  (let [info (hylp-info-f sym)]
+    (.format "[[{0}::{1}]]" (get info 2) (get info 3))))
