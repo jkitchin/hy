@@ -120,6 +120,7 @@ These are read out of the hy/compiler.py file."
 (defn get-code [fname lineno]
   "Extract the code for the sexp in FNAME after LINENO."
   (when (and fname lineno)
+    ;; first we get the line right before the function.
     (with [f (open fname)]
           (for [i (range (- lineno 1))]
             (.readline f))
@@ -131,15 +132,15 @@ These are read out of the hy/compiler.py file."
                 ch ""
                 pch "")
 
-          ;; get to start
+          ;; get to function start by reading forward to a (
           (while True
-
             (setv pch ch
                   ch (.read f 1))
             (when (= ch "(")
               (setv state 1)
               (break)))
 
+          ;; now we read to the end closing ).
           (while (and (not (= 0 state)))
             (setv ch (.read f 1))
             (+= s ch)
@@ -157,12 +158,11 @@ These are read out of the hy/compiler.py file."
              [(and (not in-string) (not in-comment) (= ch ")"))
               (setv state (- state 1))]
              [(and (not in-string) (not in-comment) (= ch "("))
-              (+= state 1)]
-             ))
+              (+= state 1)]))
           s)))
 
 
-(defn get-args (code-string)
+(defn get-args [code-string]
   "Parse the args out of the CODE-STRING."
   (when code-string
     (let [state 0
@@ -194,9 +194,24 @@ These are read out of the hy/compiler.py file."
 (defmacro ? [sym]
   "Return help for SYM which is a string."
   `(let [flds (hylp-info ~sym)]
-     (.format "Usage: {0}\n\n{1}\n\n[[{2}::{3}]]\n"
-              (get flds 0) ;;Usage
+     (.format "Usage: {0}
+
+{1}
+
+[[{2}::{3}]]
+
+"
+              (get flds 0) ;; Usage
               (get flds 1) ;; docstring
               (get flds 2) ;; file
               (get flds 3) ;; lineno
               )))
+
+
+(defmacro hyldoc [sym]
+  "Return an eldoc style string for the string SYM."
+  `(string
+    (try
+     (get (hylp-info ~sym) 0)
+     (except [e Exception]
+       ""))))
